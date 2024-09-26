@@ -1,69 +1,64 @@
 import numpy as np
 
-def simplex(c, A, b):
-    # Add slack variables to convert inequalities to equalities
+def simplex_method(c, A, b):
+ 
     m, n = A.shape
-    A = np.hstack([A, np.eye(m)])  # Add slack variables
-    c = np.hstack([c, np.zeros(m)])  # Adjust the cost vector
-
-    # Initial Basic Feasible Solution (BFS)
-    basis = list(range(n, n + m))
     
-    # Initialize the tableau
     tableau = np.zeros((m + 1, n + m + 1))
-    tableau[:m, :n + m] = A
-    tableau[:m, -1] = b
-    tableau[-1, :n + m] = -c
+    tableau[:-1, :-1] = np.hstack([A, np.eye(m)])
+    tableau[:-1, -1] = b
+    tableau[-1, :n] = c
 
-    def pivot(tableau, row, col):
-        tableau[row] /= tableau[row, col]
-        for i in range(len(tableau)):
-            if i != row:
-                tableau[i] -= tableau[i, col] * tableau[row]
-
-    while np.any(tableau[-1, :-1] < 0):
-        # Determine entering variable (most negative coefficient in the objective row)
-        col = np.argmin(tableau[-1, :-1])
+    while True:
+        reduced_costs = tableau[-1, :-1]
+        if np.all(reduced_costs >= 0):
+            print("Optimal solution found.")
+            solution = np.zeros(n)
+            for i in range(m):
+                col = tableau[i, :n]
+                if np.sum(col == 1) == 1 and np.sum(col) == 1:
+                    index = np.where(col == 1)[0][0]
+                    solution[index] = tableau[i, -1]
+            return solution, tableau[-1, -1], "Optimal"
         
-        # Check for unboundedness (if all elements in the column are ≤ 0)
-        if np.all(tableau[:-1, col] <= 0):
-            return None, None, False, True  # Unbounded solution
+        # Step 2: Find the entering variable (most negative reduced cost)
+        pivot_col = np.argmin(reduced_costs)
+        if reduced_costs[pivot_col] >= 0:
+            print("No negative reduced cost, optimal solution reached.")
+            break
         
-        # Determine leaving variable (smallest ratio of b[i] / A[i, col])
-        ratios = tableau[:-1, -1] / tableau[:-1, col]
-        valid_ratios = np.where(tableau[:-1, col] > 0, ratios, np.inf)
+        # Step 3: Check for unboundedness (no positive ratios in pivot column)
+        if np.all(tableau[:-1, pivot_col] <= 0):
+            print("Unbounded solution detected.")
+            return None, None, "Unbounded"
         
-        # Check if there are no valid ratios (infeasible problem)
-        if np.all(valid_ratios == np.inf):
-            return None, None, True, False  # No feasible solution
+        # Step 4: Find the leaving variable (minimum positive ratio)
+        ratios = tableau[:-1, -1] / tableau[:-1, pivot_col]
+        ratios[tableau[:-1, pivot_col] <= 0] = np.inf
+        pivot_row = np.argmin(ratios)
+        if np.isinf(ratios[pivot_row]):
+            print("No feasible solution (infeasible problem).")
+            return None, None, "Infeasible"
         
-        row = np.argmin(valid_ratios)
+        # Perform pivot operation
+        tableau[pivot_row, :] /= tableau[pivot_row, pivot_col]
+        for i in range(m + 1):
+            if i != pivot_row:
+                tableau[i, :] -= tableau[i, pivot_col] * tableau[pivot_row, :]
         
-        # Pivot
-        pivot(tableau, row, col)
-        basis[row] = col
+        # Step 5: Check for alternative solutions (zero reduced costs in non-basic variables)
+        non_basic_cols = [i for i in range(n) if not np.any(tableau[:-1, i] == 1)]
+        if np.any(tableau[-1, non_basic_cols] == 0):
+            print("Alternative optimal solution exists.")
+            return None, None, "Alternative solution"
 
-    # Extract the solution
-    solution = np.zeros(n + m)
-    solution[basis] = tableau[:-1, -1]
-    optimal_value = tableau[-1, -1]
-    
-    # Check for alternative solutions:
-    alternative_solution_exists = np.any((tableau[-1, :-1] == 0) & (solution[:-m] == 0))
+# Example usage
+c = np.array([2, 3, 4])
+A = np.array([[3, 2, 1], [2, 5, 3]])
+b = np.array([10, 15])
 
-    return solution[:n], optimal_value, alternative_solution_exists, False
-
-# Example Usage
-c = np.array([3, 2])  # Objective function coefficients
-A = np.array([[1, 2],
-              [1, 1]])  # Constraint coefficients
-b = np.array([4, 3])  # Right-hand side values
-
-optimal_solution, optimal_value, has_alternative, is_unbounded = simplex(c, A, b)
-
-if optimal_solution is None and optimal_value is None:
-    print("No feasible solution exists." if not is_unbounded else "The solution is unbounded.")
-else:
-    print("Optimal Solution:", optimal_solution)
-    print("Optimal Value:", optimal_value)
-    print("Alternative Solution Exists:", has_alternative)
+solution, value, status = simplex_method(c, A, b)
+print("Status:", status)
+if solution is not None:
+    print("Optimal solution:", solution)
+    print("Optimal value:", value)
