@@ -14,8 +14,7 @@ def simplex(c, A, b):
         Tuple: Solution to the linear program (x values), optimal value
     """
     m, n = A.shape
-    
-    # Create tableau
+
     tableau = np.zeros((m + 1, n + m + 1))
     
     tableau[-1, :n] = -c
@@ -30,7 +29,7 @@ def simplex(c, A, b):
       
         pivot_col = np.argmin(tableau[-1, :-1])
         if np.all(tableau[:-1, pivot_col] <= 0):
-            raise Exception('Решений бесконечно много')
+            raise Exception('Задача не ограничена. Все элементы разрешающего столбца <= 0')
        
         ratios = tableau[:-1, -1] / tableau[:-1, pivot_col]
         ratios[ratios <= 0] = np.inf
@@ -57,5 +56,5 @@ A = np.array([[1, -2],[-2,1] ])
 b = np.array([2,2])  
 
 solution, optimal_value = simplex(c, A, b)
-print("Optimal solution:", solution)
-print("Optimal value:", optimal_value)
+print("Оптимальное решение: ", solution)
+print("Оптимальное значение:", optimal_value)
