@@ -1,5 +1,7 @@
 import numpy as np
+
 np.seterr(divide='ignore', invalid='ignore')
+np.set_printoptions(suppress=True, precision=2)
 
 def simplex(c, A, b):
     m, n = A.shape
