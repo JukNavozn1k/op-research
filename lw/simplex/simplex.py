@@ -2,27 +2,15 @@ import numpy as np
 np.seterr(divide='ignore', invalid='ignore')
 
 def simplex(c, A, b):
-    """
-    Solve the linear program:
-    Maximize:    c^T * x
-    Subject to:  A * x <= b, x >= 0
-    Args:
-        c : Coefficients of the objective function (maximize)
-        A : Constraint matrix
-        b : Constraint bounds
-    Returns:
-        Tuple: Solution to the linear program (x values), optimal value
-    """
     m, n = A.shape
-
     tableau = np.zeros((m + 1, n + m + 1))
     
     tableau[-1, :n] = -c
-
     tableau[:m, :n] = A
     tableau[:m, n:n + m] = np.eye(m)
     tableau[:m, -1] = b
 
+    has_alternative = False 
 
     print(tableau)
     while np.any(tableau[-1, :-1] < 0):
@@ -48,13 +36,21 @@ def simplex(c, A, b):
             x[i] = tableau[np.argmax(column), -1]
     
     optimal_value = tableau[-1, -1]
+
+    for j in range(n):
+        if tableau[-1, j] == 0:
+            column = tableau[:-1, j]
+            if np.any(column > 0) and np.count_nonzero(column) > 1:  
+                has_alternative = True
+                break
     
-    return x, optimal_value
+    return x, optimal_value,has_alternative
 
-c = np.array([3, 2])  
-A = np.array([[1, -2],[-2,1] ])  
-b = np.array([2,2])  
+c = np.array([4,5])  
+A = np.array([[2,4],[1,1], [2,1] ])  
+b = np.array([560,170,300])  
 
-solution, optimal_value = simplex(c, A, b)
+solution, optimal_value,has_alternative = simplex(c, A, b)
 print("Оптимальное решение: ", solution)
 print("Оптимальное значение:", optimal_value)
+print('Альтернативные решения: ', has_alternative)
