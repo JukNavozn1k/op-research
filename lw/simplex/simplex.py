@@ -16,7 +16,9 @@ def simplex(c, A, b):
 
     print(tableau)
     while np.any(tableau[-1, :-1] < 0):
-      
+        
+        if np.any(b < 0):
+            raise Exception('Задача несовместна. Есть отрицательные элементы в векторе правых частей b.')
         pivot_col = np.argmin(tableau[-1, :-1])
         if np.all(tableau[:-1, pivot_col] <= 0):
             raise Exception('Задача не ограничена. Все элементы разрешающего столбца <= 0')
@@ -48,9 +50,9 @@ def simplex(c, A, b):
     
     return x, optimal_value,has_alternative
 
-c = np.array([4,5])  
-A = np.array([[2,4],[1,1], [2,1] ])  
-b = np.array([560,170,300])  
+c = np.array([3,2])  
+A = np.array([[-1,-2],[-2,-1] ])  
+b = np.array([4,5])  
 
 solution, optimal_value,has_alternative = simplex(c, A, b)
 print("Оптимальное решение: ", solution)
